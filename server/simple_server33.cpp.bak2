@@ -1,0 +1,67 @@
+#include<cstring> 
+#include<cstdio> 
+#include<cstdlib> 
+#include<string> 
+#include<map>
+#include "sock3.h"
+#include "prereq.h"
+#include<string>
+
+#define PORT 9870   //connection port
+
+using namespace std;
+
+    //strerror, perror
+int main(){
+    int sockfd,new_sockfd;  //listen on sock_fd, new connection on new_fd
+//    pthread_mutex_init(&mtx,NULL);
+    pthread_mutex_init(&rec_break,NULL);
+    struct sockaddr_in host_addr,client_addr;
+    socklen_t sin_size;
+    int recv_length=1,yes=1;
+    char buff[1024];
+    //getting a new socket descriptor
+    if((sockfd = socket(PF_INET, SOCK_STREAM,0))==-1)
+       return err("wrong socket\n\0");
+    //Making socket reusable
+    if(-1 ==setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR,&yes,sizeof(int)))
+        return err("SO_REUSEADDR");
+    //assign address parameters
+    host_addr.sin_family = AF_INET;
+    host_addr.sin_port = htons(PORT);
+    host_addr.sin_addr.s_addr = 0;  //get default address
+    memset(&(host_addr.sin_zero), '\0',8);
+
+    if(-1 == bind(sockfd, (struct sockaddr*)&host_addr,sizeof(sockaddr)))
+        return err("binding");
+
+    //start the server switch
+    if(-1 == listen(sockfd, 10))
+        return err("listening");
+    cout<<"I am Server:IP "<<inet_ntoa(host_addr.sin_addr)<<" "<<ntohs(host_addr.sin_port)<<endl;
+        //start the server
+       cout<<"Hi This is Server\n";
+    while(1){
+        cout<<"HI"<<endl;
+        sin_size = sizeof(sockaddr_in);
+        new_sockfd = accept(sockfd,(sockaddr*)&client_addr,&sin_size);
+        cout<<"Got connection from "<<inet_ntoa(client_addr.sin_addr)<<" "<<ntohs(client_addr.sin_port)<<endl;
+       struct pass arg_thread;
+        arg_thread.fd = new_sockfd;
+        arg_thread.cl_addr = client_addr;
+
+        //record relevant name to address mapping
+//        record.insert(pair<string,string>(string("Name"),string(inet_ntoa(client_addr.sin_addr))));             
+        //create a thread
+        pthread_t th;
+        pthread_create(&th,NULL,process_conn,&arg_thread);
+        pthread_detach(th);
+    }
+    cout<<"OK BYE"<<"Server"<<endl;
+
+
+    return 0;
+}
+
+    
+    
